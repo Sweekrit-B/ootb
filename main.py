@@ -335,9 +335,9 @@ def plot_anomaly_chart_with_hover(anomaly_dates, merged, target_day, title):
 
     # Aggregate anomaly contributions over time for the filtered data
     # Extract unique contributors from Contributors_x and Contributors_y
-    contributors_x = list(item for sublist in filtered_data['contributors_x'].dropna() for item in eval(sublist))
+    contributors_x = list(item for sublist in filtered_data['contributors_x'].dropna() for item in sublist)
     contributors_x = set([col.replace("percent diff ", "") for col in contributors_x])
-    contributors_y = list(item for sublist in filtered_data['contributors_y'].dropna() for item in eval(sublist))
+    contributors_y = list(item for sublist in filtered_data['contributors_y'].dropna() for item in sublist)
     contributors_y = set([col.replace("percent diff ", "") for col in contributors_y])
 
     # Combine the contributors
