@@ -11,7 +11,14 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
 import io
 import json
+from dotenv import load_dotenv
 
+
+
+load_dotenv()
+
+client_secrets = os.getenv("CLIENT_SECRETS_JSON")
+client_config = json.loads(client_secrets)  # Convert to dictionary
 
 # Define scopes - we need drive.readonly access to download files
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
@@ -57,8 +64,7 @@ def get_credentials():
             creds.refresh(Request())
         else:
             # This requires client_secrets.json to be in the working directory
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'client_secrets.json', SCOPES)
+            flow = InstalledAppFlow.from_client_config(client_config, SCOPES)
             creds = flow.run_local_server(port=61899)
         
         # Save credentials for future use
