@@ -10,6 +10,7 @@ import pandas as pd
 import streamlit as st
 from datetime import datetime
 from tqdm import tqdm
+from drive import download_parquet_from_drive_link
 
 st.markdown("""
     <style>
@@ -22,7 +23,11 @@ st.markdown("""
 @st.cache_data
 def run_data_prep(file):
     tqdm.pandas()
-    df = pd.read_parquet("al_15day_export.parquet")
+    
+    drive_link = "https://drive.google.com/file/d/1T31Y3ch6tESLpwZ4yPWAaUJaI9W95q7T/view?usp=sharing"
+
+    # Download and read the Parquet file
+    df = download_parquet_from_drive_link(drive_link)
     df = preprocess(df)
 
     all_events, visitors, buyers, orders = split_by_metric(df)
