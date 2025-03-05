@@ -15,7 +15,7 @@ from sklearn.neighbors import NearestNeighbors
 from kneed import KneeLocator
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
-
+from drive import download_parquet_from_drive_link
 # %% Preprocessing Functions
 
 tqdm.pandas()
@@ -381,7 +381,11 @@ def plot_anomaly_chart_with_hover(anomaly_dates, merged, target_day, title):
 # %% Run all functions and create intermediary CSVs
 
 if __name__ == "__main__":
-    df = pd.read_parquet("al_15day_export.parquet")
+    drive_link = "https://drive.google.com/file/d/1T31Y3ch6tESLpwZ4yPWAaUJaI9W95q7T/view?usp=sharing"
+
+    # Download and read the Parquet file
+    df = download_parquet_from_drive_link(drive_link)
+    # df = pd.read_parquet("al_15day_export.parquet")
     print("Finished processing Parquet file")
 
     df = preprocess(df)
