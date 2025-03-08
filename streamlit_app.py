@@ -31,7 +31,9 @@ def run_data_prep(file):
     drive_link = link_input
 
     # Download and read the Parquet file
-    df = download_parquet_from_drive_link(drive_link)
+    client_secrets = st.secrets["CLIENT_SECRETS_JSON"]
+    client_secrets = {"web": dict(client_secrets)}
+    df = download_parquet_from_drive_link(drive_link, client_secrets)
     df = preprocess(df)
 
     all_events, visitors, buyers, orders = split_by_metric(df)
@@ -77,8 +79,8 @@ if link_input:
     try:
         all_events_geography_contributions, all_events_devices_contributions, buyers_geography_contributions, buyers_devices_contributions, visitors_geography_contributions, visitors_devices_contributions, orders_geography_contributions, orders_devices_contributions = run_data_prep("al_15day_export.parquet")
         inputs_valid = True
-    except:
-        st.markdown("Please enter a valid link.")
+    except Exception as e:
+        st.markdown(f"{e}")
         inputs_valid = False
 
 if inputs_valid:

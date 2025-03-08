@@ -11,14 +11,12 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseDownload
 import io
 import json
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 
+# load_dotenv()
 
-
-load_dotenv()
-
-client_secrets = os.getenv("CLIENT_SECRETS_JSON")
-client_config = json.loads(client_secrets)  # Convert to dictionary
+# client_secrets = os.getenv("CLIENT_SECRETS_JSON")
+# client_config = json.loads(client_secrets)  # Convert to dictionary
 
 # Define scopes - we need drive.readonly access to download files
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
@@ -44,7 +42,7 @@ def extract_file_id_from_url(url):
     
     raise ValueError("Could not extract file ID from the provided URL")
 
-def get_credentials():
+def get_credentials(client_secrets):
     """
     Get and refresh OAuth credentials.
     Creates a token.json file to store credentials for future use.
@@ -64,6 +62,8 @@ def get_credentials():
             creds.refresh(Request())
         else:
             # This requires client_secrets.json to be in the working directory
+            client_config = json.dumps(client_secrets)
+            client_config = json.loads(client_config)
             flow = InstalledAppFlow.from_client_config(client_config, SCOPES)
             creds = flow.run_local_server(port=61899)
         
@@ -73,7 +73,7 @@ def get_credentials():
     
     return creds
 
-def download_parquet_from_drive_link(drive_link, output_path=None):
+def download_parquet_from_drive_link(drive_link, client_secrets, output_path=None):
     """
     Download a Parquet file from Google Drive using a sharing URL and OAuth.
     
@@ -92,7 +92,7 @@ def download_parquet_from_drive_link(drive_link, output_path=None):
         output_path = f"temp_{file_id}.parquet"
     
     # Get OAuth credentials
-    creds = get_credentials()
+    creds = get_credentials(client_secrets)
     
     # Build the Drive API service
     service = build('drive', 'v3', credentials=creds)
