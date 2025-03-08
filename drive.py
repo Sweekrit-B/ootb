@@ -68,8 +68,8 @@ def get_credentials(client_secrets):
             creds = flow.run_local_server(port=61899)
         
         # Save credentials for future use
-        with open('token.json', 'w') as token:
-            token.write(creds.to_json())
+        # with open('token.json', 'w') as token:
+        #     token.write(creds.to_json())
     
     return creds
 

@@ -12,7 +12,7 @@ from datetime import datetime
 from tqdm import tqdm
 import gdown
 import io
-# from drive import download_parquet_from_drive_link
+from drive import download_parquet_from_drive_link
 
 st.markdown("""
     <style>
@@ -39,12 +39,12 @@ def run_data_prep(file):
 
     drive_link = link_input
     print("Starting data download")
-    df = load_data_from_drive(drive_link)
-    print("Downloaded data")
+    # df = load_data_from_drive(drive_link)
     # Download and read the Parquet file
-    # client_secrets = st.secrets["CLIENT_SECRETS_JSON"]
-    # client_secrets = {"web": dict(client_secrets)}
-    # df = download_parquet_from_drive_link(drive_link, client_secrets)
+    client_secrets = st.secrets["CLIENT_SECRETS_JSON"]
+    client_secrets = {"web": dict(client_secrets)}
+    df = download_parquet_from_drive_link(drive_link, client_secrets)
+    print("Downloaded data")
 
     df = preprocess(df)
     print("Preprocessed data")

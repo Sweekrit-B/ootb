@@ -5,3 +5,5 @@ metric_csvs_1_29/
 client_secrets.json
 token.json
 .streamlit/
+node_modules/
+package-lock.json
