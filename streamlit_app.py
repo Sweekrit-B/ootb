@@ -39,14 +39,17 @@ def run_data_prep(file):
 
     drive_link = link_input
     df = load_data_from_drive(drive_link)
+    print("Downloaded data")
     # Download and read the Parquet file
     # client_secrets = st.secrets["CLIENT_SECRETS_JSON"]
     # client_secrets = {"web": dict(client_secrets)}
     # df = download_parquet_from_drive_link(drive_link, client_secrets)
 
     df = preprocess(df)
+    print("Preprocessed data")
 
     all_events, visitors, buyers, orders = split_by_metric(df)
+    print("Split data")
 
     all_events_devices = split_by_dimension(all_events, "device")
     all_events_geography = split_by_dimension(all_events, "geography")
@@ -71,7 +74,7 @@ def run_data_prep(file):
 
     orders_devices_contributions = save_contributor_processing(orders_devices, "orders_devices")
     orders_geography_contributions = save_contributor_processing(orders_geography, "orders_geography")
-
+    
     return all_events_geography_contributions, all_events_devices_contributions, buyers_geography_contributions, buyers_devices_contributions, visitors_geography_contributions, visitors_devices_contributions, orders_geography_contributions, orders_devices_contributions
 
 # all_events_geography = pd.read_csv("all_events_geography_contributors.csv").drop(columns="Unnamed: 0").set_index('ds').reset_index()
