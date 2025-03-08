@@ -10,7 +10,8 @@ import pandas as pd
 import streamlit as st
 from datetime import datetime
 from tqdm import tqdm
-from drive import download_parquet_from_drive_link
+import gdown
+# from drive import download_parquet_from_drive_link
 
 st.markdown("""
     <style>
@@ -29,11 +30,13 @@ def run_data_prep(file):
     tqdm.pandas()
 
     drive_link = link_input
-
+    gdown.download(drive_link, "temp_output.parquet", quiet=False, fuzzy=True)
+    df = pd.read_parquet("temp_output.parquet")
     # Download and read the Parquet file
-    client_secrets = st.secrets["CLIENT_SECRETS_JSON"]
-    client_secrets = {"web": dict(client_secrets)}
-    df = download_parquet_from_drive_link(drive_link, client_secrets)
+    # client_secrets = st.secrets["CLIENT_SECRETS_JSON"]
+    # client_secrets = {"web": dict(client_secrets)}
+    # df = download_parquet_from_drive_link(drive_link, client_secrets)
+
     df = preprocess(df)
 
     all_events, visitors, buyers, orders = split_by_metric(df)
