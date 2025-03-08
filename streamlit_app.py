@@ -38,6 +38,7 @@ def run_data_prep(file):
     tqdm.pandas()
 
     drive_link = link_input
+    print("Starting data download")
     df = load_data_from_drive(drive_link)
     print("Downloaded data")
     # Download and read the Parquet file
