@@ -11,6 +11,7 @@ import streamlit as st
 from datetime import datetime
 from tqdm import tqdm
 import gdown
+import io
 # from drive import download_parquet_from_drive_link
 
 st.markdown("""
@@ -25,13 +26,19 @@ st.title("📈 Get Anomaly Contributions for Time Series Customer Data")
 link_input = st.text_input("Google Drive Link: ")
 # https://drive.google.com/file/d/1T31Y3ch6tESLpwZ4yPWAaUJaI9W95q7T/view?usp=sharing
 
+def load_data_from_drive(drive_link):
+    output = io.BytesIO()
+    gdown.download(drive_link, output, quiet=False, fuzzy=True)
+    output.seek(0)
+    df = pd.read_parquet(output)
+    return df
+
 @st.cache_data
 def run_data_prep(file):
     tqdm.pandas()
 
     drive_link = link_input
-    gdown.download(drive_link, "temp_output.parquet", quiet=False, fuzzy=True)
-    df = pd.read_parquet("temp_output.parquet")
+    df = load_data_from_drive(drive_link)
     # Download and read the Parquet file
     # client_secrets = st.secrets["CLIENT_SECRETS_JSON"]
     # client_secrets = {"web": dict(client_secrets)}
