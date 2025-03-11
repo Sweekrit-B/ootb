@@ -12,7 +12,7 @@ This script provides functionality to authenticate with Google Drive via OAuth 2
 
 This script performs preprocessing, detects anomolies across metrics using Prophet, finds anomaly contribution of different dimensions (eg. device type, geography) by determining percentage difference between actual and predicted values, and identifies contributors using DBSCAN and KNN to cluster contributors into groups.
 
-## streamlit.py
+## streamlit_app.py
 
 This Streamlit application creates an interactive web dashboard for analyzing and visualizing anomalies in e-commerce time series data using drive.py and main.py.
 
