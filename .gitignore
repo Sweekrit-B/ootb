@@ -4,7 +4,7 @@ prophet_graphs/
 metric_csvs_1_29/
 client_secrets.json
 token.json
-.streamlit/
+.streamlit/secrets.toml
 node_modules/
 package-lock.json
 secrets.toml
