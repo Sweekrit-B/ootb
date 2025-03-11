@@ -1,8 +1,4 @@
-# Run Instructions
-
-python -m streamlit run streamlit_app.py
-
-# Documentation
+# Out of the Blue/TCG Customer Anomaly Detection
 
 ## drive.py
 
