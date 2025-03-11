@@ -19,6 +19,7 @@ import streamlit as st
 from dash import Dash, dcc, html, Input, Output
 # %% Preprocessing Functions
 
+
 tqdm.pandas()
 
 def parse_user_agent(user_agent):
@@ -446,7 +447,7 @@ def plot_anomaly_chart_with_hover(metric, dimensional_contributions, all_top_lev
         "x1": selected_hour,
         "y0": 0,
         "y1": 1,
-        "line": {"color": "#000000", "width": 2}
+        "line": {"color": "#FFFFFF", "width": 2}
     })
     fig_line.update_layout(
         title="Anomaly Contributions Over Time",

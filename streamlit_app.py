@@ -14,6 +14,8 @@ import gdown
 import io
 from drive import download_parquet_from_drive_link
 
+st.set_page_config(layout="wide")
+
 st.markdown("""
     <style>
     .stTextInput input {
