@@ -7,3 +7,4 @@ token.json
 .streamlit/
 node_modules/
 package-lock.json
+secrets.toml

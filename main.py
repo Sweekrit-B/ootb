@@ -15,7 +15,8 @@ from sklearn.neighbors import NearestNeighbors
 from kneed import KneeLocator
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
-
+import streamlit as st
+from dash import Dash, dcc, html, Input, Output
 # %% Preprocessing Functions
 
 tqdm.pandas()
@@ -324,59 +325,196 @@ def create_hover_text(row):
     hover_text += "Contribution: %{y}<br>"
     return hover_text
 
-def plot_anomaly_chart_with_hover(anomaly_dates, merged, target_day, title):
+def plot_anomaly_chart_with_hover(metric, dimensional_contributions, all_top_levels, start_day, end_day):
+    # Convert start_day and end_day to datetime
+    start_day = pd.to_datetime(start_day)
+    end_day = pd.to_datetime(end_day)
 
-    target_day = pd.to_datetime(target_day)
-    merged['ds'] = pd.to_datetime(merged['ds'])
-    filtered_data = merged[merged['ds'].dt.date == target_day.date()]
+    # Filter data between start_day and end_day (inclusive)
+    filtered_data = dimensional_contributions[
+        (dimensional_contributions['ds'].dt.date >= start_day.date()) &
+        (dimensional_contributions['ds'].dt.date <= end_day.date())
+    ].copy()
+    filtered_data = filtered_data.sort_values('ds')
 
-    # Rename columns
-    filtered_data.columns = [col.replace("percent diff ", "") for col in filtered_data.columns]
+    all_top_levels = all_top_levels[
+        (all_top_levels['ds'].dt.date >= start_day.date()) &
+        (all_top_levels['ds'].dt.date <= end_day.date())
+    ].copy()
 
-    # Aggregate anomaly contributions over time for the filtered data
-    # Extract unique contributors from Contributors_x and Contributors_y
-    contributors_x = list(item for sublist in filtered_data['contributors_x'].dropna() for item in sublist)
-    contributors_x = set([col.replace("percent diff ", "") for col in contributors_x])
-    contributors_y = list(item for sublist in filtered_data['contributors_y'].dropna() for item in sublist)
-    contributors_y = set([col.replace("percent diff ", "") for col in contributors_y])
+    anomaly_dates = all_top_levels[all_top_levels[f'{metric}_is_anomaly'] == 'Yes']['ds']
 
-    # Combine the contributors
-    selected_columns = list(contributors_x.union(contributors_y))
+    # Reset indices to ensure alignment
+    filtered_data = filtered_data.reset_index(drop=True)
+    all_top_levels = all_top_levels.reset_index(drop=True)
 
-    # Filter the DataFrame to include only the selected columns
-    filtered_df = filtered_data[['ds', 'contributors_x', 'contributors_y'] + selected_columns].set_index('ds')
+    # Get all possible contributors for consistent x-axis
+    all_contributors = set()
+    for _, row in filtered_data.iterrows():
+        contrib_x = row['contributors_x'] if isinstance(row['contributors_x'], list) else []
+        contrib_y = row['contributors_y'] if isinstance(row['contributors_y'], list) else []
+        all_contributors.update(contrib_x + contrib_y)
+    all_contributors = list(all_contributors)
+    all_contributor_labels = [contrib.replace('percent diff ', '') for contrib in all_contributors]
 
-    # Create a Plotly figure
-    fig = px.area(filtered_df, x=filtered_df.index, y=selected_columns,
-                  title=f"{title}",
-                  labels={"value": "Contribution Percentage", "variable": "Contributors"})
+    # Define bar colors
+    bar_colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#C9CBCF', '#7BC043']
+    if len(all_contributors) > len(bar_colors):
+        bar_colors *= (len(all_contributors) // len(bar_colors) + 1)
 
+    # Create hover text for each time point
+    hover_text = []
+    for index, row in filtered_data.iterrows():
+        contrib_x = row['contributors_x'] if isinstance(row['contributors_x'], list) else []
+        contrib_y = row['contributors_y'] if isinstance(row['contributors_y'], list) else []
+        relevant_contributors = set(contrib_x + contrib_y)
+        text = f"Total y: {all_top_levels.iloc[index][f'{metric}_y']}<br>"
+        text += '<br>'.join([f"{contrib}: {row[contrib]:.2f}%" for contrib in relevant_contributors]) + '<br>'
+        text += f"Is Visitor Anomaly: {all_top_levels.iloc[index]['visitors_is_anomaly']}<br>"
+        text += f"Is Buyer Anomaly: {all_top_levels.iloc[index]['buyers_is_anomaly']}<br>"
+        text += f"Is Order Anomaly: {all_top_levels.iloc[index]['orders_is_anomaly']}<br>"
+        hover_text.append(text)
+
+    # Line chart setup
+    line_color = '#1f77b4'
+    fig_line = go.Figure()
+    fig_line.add_trace(go.Scatter(
+        x=filtered_data['ds'],
+        y=all_top_levels[f'{metric}_y'],
+        mode='lines',
+        fill='tozeroy',
+        line=dict(width=2, color=line_color),
+        name='Value of y',
+        text=hover_text,
+        hovertemplate='%{text}<extra></extra>'
+    ))
+    fig_line.add_trace(go.Scatter(
+        x=all_top_levels['ds'],
+        y=all_top_levels[f'{metric}_y'],
+        mode='markers',
+        marker=dict(size=8, color=line_color, line=dict(width=1, color=line_color)),
+        name='Data Points',
+        text=hover_text,
+        hovertemplate='%{text}<extra></extra>'
+    ))
+
+    # Anomaly rectangles
+    shapes = []
     for anomaly_time in anomaly_dates:
-        if anomaly_time.date() == target_day.date():
-            fig.add_vrect(x0=anomaly_time - pd.Timedelta(hours=1), x1=anomaly_time + pd.Timedelta(hours=1),
-                      fillcolor="red", opacity=0.3, line_width=0)
+        if start_day.date() <= anomaly_time.date() <= end_day.date():
+            shapes.append({
+                "type": "rect",
+                "xref": "x",
+                "yref": "paper",
+                "x0": anomaly_time - pd.Timedelta(hours=1),
+                "x1": anomaly_time + pd.Timedelta(hours=1),
+                "y0": 0,
+                "y1": 1,
+                "fillcolor": "red",
+                "opacity": 0.3,
+                "line_width": 0
+            })
 
-    # Update layout for better visualization
-    fig.update_layout(
+    # Slider setup
+    anomaly_hours = sorted([t for t in anomaly_dates if start_day.date() <= t.date() <= end_day.date()])
+    if not anomaly_hours:
+        anomaly_hours = [pd.Timestamp(start_day.date())]
+    hour_options = [{'label': h.strftime('%Y-%m-%d %H:%M'), 'value': str(h)} for h in anomaly_hours]
+
+    # Streamlit UI
+    st.title("Anomaly Contributions Visualization")
+    if len(anomaly_hours) > 1:
+        selected_hour_idx = st.slider("Select Anomaly", 0, len(anomaly_hours) - 1, 0, step=1)
+    else:
+        st.write("No anomalies detected in this time frame. Showing data for the start date.")
+        selected_hour_idx = 0  # Only one option, no slider needed
+
+    selected_hour = anomaly_hours[selected_hour_idx]
+
+    selected_hour = pd.to_datetime(hour_options[selected_hour_idx]['value'])
+    closest_idx = (filtered_data['ds'] - selected_hour).abs().argmin() if not filtered_data.empty else 0
+    closest_time = filtered_data['ds'].iloc[closest_idx]
+    closest_y = all_top_levels[f'{metric}_y'].iloc[closest_idx]
+    closest_text = hover_text[closest_idx] if hover_text else "No data"
+
+    # Update line chart
+    shapes.append({
+        "type": "line",
+        "xref": "x",
+        "yref": "paper",
+        "x0": selected_hour,
+        "x1": selected_hour,
+        "y0": 0,
+        "y1": 1,
+        "line": {"color": "#000000", "width": 2}
+    })
+    fig_line.update_layout(
+        title="Anomaly Contributions Over Time",
         xaxis_title="Time",
-        yaxis_title="Contribution Percentage",
-        legend_title="Contributors",
-        hovermode="x unified"
+        yaxis_title="Value of y",
+        width=800,
+        height=600,
+        shapes=shapes,
+        showlegend=False,
+        annotations=[{
+            "x": selected_hour,
+            "y": closest_y + (all_top_levels[f'{metric}_y'].max() - all_top_levels[f'{metric}_y'].min()) * 0.2,
+            "xref": "x",
+            "yref": "y",
+            "text": closest_text,
+            "showarrow": True,
+            "arrowhead": 2,
+            "ax": 50,
+            "ay": -50,
+            "bgcolor": "black",
+            "bordercolor": "white",
+            "font": {"color": "white", "size": 12},
+            "borderwidth": 1,
+            "opacity": 0.9
+        }],
+        dragmode='pan',  # Enable panning as the default interaction mode
+        xaxis=dict(constrain='domain'),  # Allow x-axis panning/zooming
+        yaxis=dict(constrain='domain')
     )
 
-    hover_text = filtered_df.apply(create_hover_text, axis=1)
-
-    fig.update_layout(
-        hovermode="x unified"
+    # Bar chart setup
+    selected_row = filtered_data.iloc[closest_idx]
+    contrib_x = selected_row['contributors_x'] if isinstance(selected_row['contributors_x'], list) else []
+    contrib_y = selected_row['contributors_y'] if isinstance(selected_row['contributors_y'], list) else []
+    relevant_contributors = set(contrib_x + contrib_y)
+    bar_values = [selected_row.get(contrib, 0) for contrib in all_contributors]
+    fig_bar = go.Figure(
+        data=[go.Bar(
+            x=all_contributor_labels,
+            y=bar_values,
+            marker_color=bar_colors[:len(all_contributors)]
+        )],
+        layout=go.Layout(
+            title="Contributor Percent Differences",
+            xaxis_title="Contributors",
+            yaxis_title="Percent Diff (%)",
+            width=400,
+            height=600,
+            bargap=0.2
+        )
     )
 
-    fig.update_traces(
-        hovertemplate=hover_text
-    )
-
-    # Show the figure
-    return fig
-    # fig.show()
+    # Display charts side-by-side in Streamlit
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        st.plotly_chart(
+            fig_line,
+            use_container_width=True#,
+            # config={
+            #     'scrollZoom': True,  # Enable scrolling to zoom
+            #     'displayModeBar': True,  # Show the mode bar
+            #     'modeBarButtonsToAdd': ['pan2d', 'zoom2d', 'zoomIn2d', 'zoomOut2d', 'resetScale2d']  # Add panning and zooming buttons
+            # }
+        )
+    with col2:
+        st.plotly_chart(fig_bar, use_container_width=True)
+    
+    return fig_line, fig_bar
 
 # %% Run all functions and create intermediary CSVs
 
@@ -390,6 +528,18 @@ if __name__ == "__main__":
     df = pd.read_csv("preprocessed.csv")
 
     all_events, visitors, buyers, orders = split_by_metric(df)
+
+    print(all_events)
+
+    all_events_top = all_events.groupby("time_hour").size().reset_index(name='Total')
+    visitors_top = visitors.groupby("time_hour").size().reset_index(name='Total')
+    buyers_top = buyers.groupby("time_hour").size().reset_index(name='Total')
+    orders_top = orders.groupby("time_hour").size().reset_index(name='Total')
+
+    prophet_model(all_events_top, 'Total').to_csv(f"all_events_top.csv")
+    prophet_model(visitors_top, 'Total').to_csv(f"visitors_top.csv")
+    prophet_model(buyers_top, 'Total').to_csv(f"buyers_top.csv")
+    prophet_model(orders_top, 'Total').to_csv(f"orders_top.csv")
 
     all_events_devices = split_by_dimension(all_events, "device")
     all_events_geography = split_by_dimension(all_events, "geography")
