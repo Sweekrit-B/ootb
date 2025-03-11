@@ -57,22 +57,18 @@ def run_data_prep(file):
     buyers_top = prophet_model(buyers.groupby("time_hour").size().reset_index(name='Total'), 'Total')
     orders_top = prophet_model(orders.groupby("time_hour").size().reset_index(name='Total'), 'Total')
 
-    visitors_top = pd.read_csv('visitors_top.csv')
     visitors_top = visitors_top[['ds', 'y', 'is_anomaly']]
     visitors_top = visitors_top.rename(columns={'ds': 'ds', 'y': 'visitors_y', 'is_anomaly': 'visitors_is_anomaly'})
     visitors_top['ds'] = pd.to_datetime(visitors_top['ds'])
 
-    all_events_top = pd.read_csv('all_events_top.csv')
     all_events_top = all_events_top[['ds', 'y', 'is_anomaly']]
     all_events_top = all_events_top.rename(columns={'ds': 'ds', 'y': 'all_events_y', 'is_anomaly': 'all_events_is_anomaly'})
     all_events_top['ds'] = pd.to_datetime(all_events_top['ds'])
 
-    buyers_top = pd.read_csv('buyers_top.csv')
     buyers_top = buyers_top[['ds', 'y', 'is_anomaly']]
     buyers_top = buyers_top.rename(columns={'ds': 'ds', 'y': 'buyers_y', 'is_anomaly': 'buyers_is_anomaly'})
     buyers_top['ds'] = pd.to_datetime(buyers_top['ds'])
 
-    orders_top = pd.read_csv('orders_top.csv')
     orders_top = orders_top[['ds', 'y', 'is_anomaly']]
     orders_top = orders_top.rename(columns={'ds': 'ds', 'y': 'orders_y', 'is_anomaly': 'orders_is_anomaly'})
     orders_top['ds'] = pd.to_datetime(orders_top['ds'])
@@ -130,7 +126,7 @@ if link_input:
 
 if inputs_valid:
     st.header("Get contributions")
-    input = st.selectbox(
+    input_metric = st.selectbox(
         "Which metric would you like to view?",
         ("Visitors", "Orders", "Buyers", "All Events"),
         index=None,
@@ -162,8 +158,8 @@ if inputs_valid:
     #     else:
     #         inputs_valid = True
 
-    if inputs_valid:
-        if input.lower() == "buyers":
+    if input_metric:
+        if input_metric.lower() == "buyers":
             st.header("Buyers")
             with st.expander("Buyers - geography"):
                 st.dataframe(buyers_geography_contributions, use_container_width=True)
@@ -172,7 +168,7 @@ if inputs_valid:
                 
             figure = plot_anomaly_chart_with_hover('buyers', merge(buyers_devices_contributions, buyers_geography_contributions), \
                 all_top_levels, start_date, end_date)
-        elif input.lower() == "visitors":
+        elif input_metric.lower() == "visitors":
             st.header("Visitors")
             with st.expander("Visitors - geography"):
                 st.dataframe(visitors_geography_contributions, use_container_width=True)
@@ -180,7 +176,7 @@ if inputs_valid:
                 st.dataframe(visitors_devices_contributions, use_container_width=True)
             figure = plot_anomaly_chart_with_hover('visitors', merge(visitors_devices_contributions, visitors_geography_contributions), \
                 all_top_levels, start_date, end_date)
-        elif input.lower() == "orders":
+        elif input_metric.lower() == "orders":
             st.header("Orders")
             with st.expander("Orders - geography"):
                 st.dataframe(orders_geography_contributions, use_container_width=True)
@@ -188,13 +184,13 @@ if inputs_valid:
                 st.dataframe(orders_devices_contributions, use_container_width=True)
             figure = plot_anomaly_chart_with_hover('orders', merge(orders_devices_contributions, orders_geography_contributions), \
                 all_top_levels, start_date, end_date)
-        elif input.lower() == "all events":
+        elif input_metric.lower() == "all events":
             st.header("All Events")
             with st.expander("All Events - geography"):
                 st.dataframe(all_events_geography_contributions, use_container_width=True)
             with st.expander("All Events - devices"):
                 st.dataframe(all_events_devices_contributions, use_container_width=True)
-            figure = plot_anomaly_chart_with_hover('all events', merge(all_events_devices_contributions, all_events_geography_contributions), \
+            figure = plot_anomaly_chart_with_hover('all_events', merge(all_events_devices_contributions, all_events_geography_contributions), \
                 all_top_levels, start_date, end_date)
 
 
