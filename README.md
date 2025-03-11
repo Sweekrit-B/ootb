@@ -1,4 +1,4 @@
-# Out of the Blue/TCG Customer Anomaly Detection
+# Out of the Blue x TCG Customer Anomaly Detection
 
 ## drive.py
 
