@@ -57,22 +57,22 @@ def run_data_prep(file):
     buyers_top = prophet_model(buyers.groupby("time_hour").size().reset_index(name='Total'), 'Total')
     orders_top = prophet_model(orders.groupby("time_hour").size().reset_index(name='Total'), 'Total')
 
-    visitors_top = pd.read_csv('visitors_top.csv')
+    # visitors_top = pd.read_csv('visitors_top.csv')
     visitors_top = visitors_top[['ds', 'y', 'is_anomaly']]
     visitors_top = visitors_top.rename(columns={'ds': 'ds', 'y': 'visitors_y', 'is_anomaly': 'visitors_is_anomaly'})
     visitors_top['ds'] = pd.to_datetime(visitors_top['ds'])
 
-    all_events_top = pd.read_csv('all_events_top.csv')
+    # all_events_top = pd.read_csv('all_events_top.csv')
     all_events_top = all_events_top[['ds', 'y', 'is_anomaly']]
     all_events_top = all_events_top.rename(columns={'ds': 'ds', 'y': 'all_events_y', 'is_anomaly': 'all_events_is_anomaly'})
     all_events_top['ds'] = pd.to_datetime(all_events_top['ds'])
 
-    buyers_top = pd.read_csv('buyers_top.csv')
+    # buyers_top = pd.read_csv('buyers_top.csv')
     buyers_top = buyers_top[['ds', 'y', 'is_anomaly']]
     buyers_top = buyers_top.rename(columns={'ds': 'ds', 'y': 'buyers_y', 'is_anomaly': 'buyers_is_anomaly'})
     buyers_top['ds'] = pd.to_datetime(buyers_top['ds'])
 
-    orders_top = pd.read_csv('orders_top.csv')
+    # orders_top = pd.read_csv('orders_top.csv')
     orders_top = orders_top[['ds', 'y', 'is_anomaly']]
     orders_top = orders_top.rename(columns={'ds': 'ds', 'y': 'orders_y', 'is_anomaly': 'orders_is_anomaly'})
     orders_top['ds'] = pd.to_datetime(orders_top['ds'])
