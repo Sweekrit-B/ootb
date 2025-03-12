@@ -335,8 +335,7 @@ def plot_anomaly_chart_with_hover(metric, dimensional_contributions, all_top_lev
     filtered_data = dimensional_contributions[
         (dimensional_contributions['ds'].dt.date >= start_day.date()) &
         (dimensional_contributions['ds'].dt.date <= end_day.date())
-    ].copy()
-    filtered_data = filtered_data.sort_values('ds')
+    ].copy().sort_values('ds')
 
     all_top_levels = all_top_levels[
         (all_top_levels['ds'].dt.date >= start_day.date()) &
@@ -389,11 +388,38 @@ def plot_anomaly_chart_with_hover(metric, dimensional_contributions, all_top_lev
         text=hover_text,
         hovertemplate='%{text}<extra></extra>'
     ))
+
+    # Slider setup
+    anomaly_hours = sorted([t for t in anomaly_dates if start_day.date() <= t.date() <= end_day.date()])
+    if not anomaly_hours:
+        anomaly_hours = [pd.Timestamp(start_day.date())]
+    hour_options = [{'label': h.strftime('%Y-%m-%d %H:%M'), 'value': str(h)} for h in anomaly_hours]
+
+    # Streamlit UI
+    st.title("Anomaly Contributions Visualization")
+    if len(anomaly_hours) > 1:
+        selected_hour_idx = st.slider("Select Anomaly", 0, len(anomaly_hours) - 1, 0, step=1)
+    else:
+        st.write("No anomalies detected in this time frame. Showing data for the start date.")
+        selected_hour_idx = 0  # Only one option, no slider needed
+
+    selected_hour = pd.to_datetime(hour_options[selected_hour_idx]['value'])
+    closest_idx = (filtered_data['ds'] - selected_hour).abs().argmin() if not filtered_data.empty else 0
+
+    # Dynamic marker colors: red for selected anomaly, original color for others
+    marker_colors = [line_color] * len(all_top_levels)  # Default to line_color
+    marker_colors[closest_idx] = '#FF0000'  # Red for the selected point
+
+    # Add markers with dynamic colors
     fig_line.add_trace(go.Scatter(
         x=all_top_levels['ds'],
         y=all_top_levels[f'{metric}_y'],
         mode='markers',
-        marker=dict(size=8, color=line_color, line=dict(width=1, color=line_color)),
+        marker=dict(
+            size=8,
+            color=marker_colors,  # Use the dynamic color list
+            line=dict(width=1, color=line_color)
+        ),
         name='Data Points',
         text=hover_text,
         hovertemplate='%{text}<extra></extra>'
@@ -416,29 +442,9 @@ def plot_anomaly_chart_with_hover(metric, dimensional_contributions, all_top_lev
                 "line_width": 0
             })
 
-    # Slider setup
-    anomaly_hours = sorted([t for t in anomaly_dates if start_day.date() <= t.date() <= end_day.date()])
-    if not anomaly_hours:
-        anomaly_hours = [pd.Timestamp(start_day.date())]
-    hour_options = [{'label': h.strftime('%Y-%m-%d %H:%M'), 'value': str(h)} for h in anomaly_hours]
-
-    # Streamlit UI
-    st.title("Anomaly Contributions Visualization")
-    if len(anomaly_hours) > 1:
-        selected_hour_idx = st.slider("Select Anomaly", 0, len(anomaly_hours) - 1, 0, step=1)
-    else:
-        st.write("No anomalies detected in this time frame. Showing data for the start date.")
-        selected_hour_idx = 0  # Only one option, no slider needed
-
-    selected_hour = anomaly_hours[selected_hour_idx]
-
-    selected_hour = pd.to_datetime(hour_options[selected_hour_idx]['value'])
-    closest_idx = (filtered_data['ds'] - selected_hour).abs().argmin() if not filtered_data.empty else 0
-    closest_time = filtered_data['ds'].iloc[closest_idx]
+    # Update line chart with selected hour
     closest_y = all_top_levels[f'{metric}_y'].iloc[closest_idx]
     closest_text = hover_text[closest_idx] if hover_text else "No data"
-
-    # Update line chart
     shapes.append({
         "type": "line",
         "xref": "x",
@@ -450,7 +456,7 @@ def plot_anomaly_chart_with_hover(metric, dimensional_contributions, all_top_lev
         "line": {"color": "#FFFFFF", "width": 2}
     })
     fig_line.update_layout(
-        title="Anomaly Contributions Over Time",
+        title=f"{metric.capitalize()} Anomaly Contributions Over Time",
         xaxis_title="Time",
         yaxis_title="Value of y",
         width=800,
@@ -467,14 +473,14 @@ def plot_anomaly_chart_with_hover(metric, dimensional_contributions, all_top_lev
             "arrowhead": 2,
             "ax": 50,
             "ay": -50,
-            "bgcolor": "black",
+            "bgcolor": "#ADD8E6",
             "bordercolor": "white",
-            "font": {"color": "white", "size": 12},
+            "font": {"color": "black", "size": 12},
             "borderwidth": 1,
             "opacity": 0.9
         }],
-        dragmode='pan',  # Enable panning as the default interaction mode
-        xaxis=dict(constrain='domain'),  # Allow x-axis panning/zooming
+        dragmode='pan',
+        xaxis=dict(constrain='domain'),
         yaxis=dict(constrain='domain')
     )
 
@@ -505,12 +511,7 @@ def plot_anomaly_chart_with_hover(metric, dimensional_contributions, all_top_lev
     with col1:
         st.plotly_chart(
             fig_line,
-            use_container_width=True#,
-            # config={
-            #     'scrollZoom': True,  # Enable scrolling to zoom
-            #     'displayModeBar': True,  # Show the mode bar
-            #     'modeBarButtonsToAdd': ['pan2d', 'zoom2d', 'zoomIn2d', 'zoomOut2d', 'resetScale2d']  # Add panning and zooming buttons
-            # }
+            use_container_width=True
         )
     with col2:
         st.plotly_chart(fig_bar, use_container_width=True)
