@@ -26,4 +26,4 @@ Then, run the build script:
 setup.py build
 ```
 
-Make sure to use the py / python3 extension before these commands if necessary.
+Make sure to use the py (Windows) / python3 (Mac) extension before these commands if necessary.
